@@ -34,8 +34,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        command: ['/bin/bash', '/etc/kafka/init.sh']
+        command: ['/bin/bash', '/etc/opt/init.sh']
         volumeMounts:
+        - name: config-template
+          mountPath: /etc/opt
         - name: config
           mountPath: /etc/kafka
       containers:
@@ -65,14 +67,18 @@ spec:
             port: 9092
           timeoutSeconds: 1
         volumeMounts:
+        - name: config-template
+          mountPath: /etc/opt
         - name: config
           mountPath: /etc/kafka
         - name: data
           mountPath: /var/lib/kafka/data
       volumes:
-      - name: config
+      - name: config-template # read-only volume 
         configMap:
           name: broker-config
+      - name: config # write configs here
+        emptyDir: {}
   volumeClaimTemplates:
   - metadata:
       name: data

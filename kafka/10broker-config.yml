@@ -9,21 +9,21 @@ data:
     set -x
 
     KAFKA_BROKER_ID=${HOSTNAME##*-}
-    sed -i "s/#init#broker.id=#init#/broker.id=$KAFKA_BROKER_ID/" /etc/kafka/server.properties
+    sed "s/#init#broker.id=#init#/broker.id=$KAFKA_BROKER_ID/" /etc/opt/server.properties | tee /etc/kafka/server.properties
 
     LABELS="kafka-broker-id=$KAFKA_BROKER_ID"
     ANNOTATIONS=""
 
     hash kubectl 2>/dev/null || {
-      sed -i "s/#init#broker.rack=#init#/#init#broker.rack=# kubectl not found in path/" /etc/kafka/server.properties
+      sed "s/#init#broker.rack=#init#/#init#broker.rack=# kubectl not found in path/" /etc/opt/server.properties | tee /etc/kafka/server.properties
     } && {
       ZONE=$(kubectl get node "$NODE_NAME" -o=go-template='{{index .metadata.labels "failure-domain.beta.kubernetes.io/zone"}}')
       if [ $? -ne 0 ]; then
-        sed -i "s/#init#broker.rack=#init#/#init#broker.rack=# zone lookup failed, see -c init-config logs/" /etc/kafka/server.properties
+        sed "s/#init#broker.rack=#init#/#init#broker.rack=# zone lookup failed, see -c init-config logs/" /etc/opt/server.properties | tee /etc/kafka/server.properties
       elif [ "x$ZONE" == "x<no value>" ]; then
-        sed -i "s/#init#broker.rack=#init#/#init#broker.rack=# zone label not found for node $NODE_NAME/" /etc/kafka/server.properties
+        sed "s/#init#broker.rack=#init#/#init#broker.rack=# zone label not found for node $NODE_NAME/" /etc/opt/server.properties | tee /etc/kafka/server.properties
       else
-        sed -i "s/#init#broker.rack=#init#/broker.rack=$ZONE/" /etc/kafka/server.properties
+        sed "s/#init#broker.rack=#init#/broker.rack=$ZONE/" /etc/opt/server.properties | tee /etc/kafka/server.properties
         LABELS="$LABELS kafka-broker-rack=$ZONE"
       fi
 
@@ -32,7 +32,7 @@ data:
         echo "Outside (i.e. cluster-external access) host lookup command failed"
       else
         OUTSIDE_PORT=3240${KAFKA_BROKER_ID}
-        sed -i "s|#init#advertised.listeners=OUTSIDE://#init#|advertised.listeners=OUTSIDE://${OUTSIDE_HOST}:${OUTSIDE_PORT}|" /etc/kafka/server.properties
+        sed "s|#init#advertised.listeners=OUTSIDE://#init#|advertised.listeners=OUTSIDE://${OUTSIDE_HOST}:${OUTSIDE_PORT}|" /etc/opt/server.properties | tee /etc/kafka/server.properties
         ANNOTATIONS="$ANNOTATIONS kafka-listener-outside-host=$OUTSIDE_HOST kafka-listener-outside-port=$OUTSIDE_PORT"
       fi
 
